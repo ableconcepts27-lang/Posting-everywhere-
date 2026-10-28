@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Post Everywhere</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1b3d;
+    --blue: #1e4fd8;
+    --blue-soft: #e4ebfc;
+    --red: #e5322d;
+    --paper: #f4f6fb;
+    --card: #ffffff;
+    --line: #d5dbeb;
+    --muted: #5b6685;
+    --ok: #12804a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 {
+    font-size: clamp(2.2rem, 9vw, 3.4rem);
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 8px 0 6px;
+  }
+  h1 .dot { color: var(--red); }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  section { margin-bottom: 26px; }
+  label, .label { display: block; font-weight: 600; margin-bottom: 8px; }
+  .hint { color: var(--muted); font-weight: 400; font-size: 0.9rem; }
+  textarea, input[type="text"], input[type="password"], input[type="datetime-local"] {
+    width: 100%;
+    font: inherit;
+    color: var(--ink);
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  textarea { min-height: 150px; resize: vertical; }
+  textarea.short { min-height: 78px; }
+  textarea:focus-visible, input:focus-visible, button:focus-visible, .chip:focus-within {
+    outline: 3px solid var(--blue);
+    outline-offset: 2px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .count { color: var(--muted); font-size: 0.9rem; margin-top: 6px; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .chip span {
+    display: inline-block;
+    padding: 10px 16px;
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    background: var(--card);
+    font-weight: 600;
+    user-select: none;
+  }
+  .chip input:checked + span { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .link-btn {
+    background: none; border: 0; padding: 0; font: inherit;
+    color: var(--blue); font-weight: 600; cursor: pointer; text-decoration: underline;
+  }
+  .upload {
+    margin-top: 10px;
+    display: inline-block;
+    padding: 10px 16px;
+    border: 2px dashed var(--blue);
+    color: var(--blue);
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .upload input { display: none; }
+  .warn { color: var(--red); font-size: 0.92rem; margin-top: 8px; min-height: 1.3em; }
+  .send {
+    width: 100%;
+    font: inherit;
+    font-weight: 800;
+    font-size: 1.15rem;
+    padding: 16px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--red);
+    color: #fff;
+    cursor: pointer;
+  }
+  .send:disabled { opacity: 0.6; cursor: progress; }
+  .results { margin-top: 20px; display: grid; gap: 8px; }
+  .res {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-left-width: 8px;
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+  .res.ok { border-left-color: var(--ok); }
+  .res.bad { border-left-color: var(--red); }
+  .res b { text-transform: capitalize; }
+  .res small { display: block; color: var(--muted); word-break: break-word; }
+  .res a { color: var(--blue); }
+  details { margin-bottom: 26px; background: var(--blue-soft); border-radius: 12px; padding: 12px 14px; }
+  summary { font-weight: 600; cursor: pointer; }
+  details .row-in { margin-top: 10px; }
+  select {
+    width: 100%; font: inherit; color: var(--ink); background: var(--card);
+    border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  }
+  select:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .field { margin-bottom: 14px; }
+  .saved-item {
+    display: flex; gap: 10px; align-items: flex-start; justify-content: space-between;
+    background: var(--card); border: 2px solid var(--line); border-radius: 12px;
+    padding: 10px 12px; margin-top: 8px;
+  }
+  .saved-item .txt { flex: 1; white-space: pre-wrap; word-break: break-word; cursor: pointer; }
+  .saved-item .del { color: var(--red); }
+  .saved-empty { color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Post everywhere<span class="dot">.</span></h1>
+  <p class="sub">Write it once. Send it to every account you have connected.</p>
+
+  <details id="lock">
+    <summary>App password</summary>
+    <div class="row-in">
+      <input type="password" id="pw" placeholder="The password you set on Netlify" autocomplete="current-password">
+    </div>
+  </details>
+
+  <section>
+    <div class="row">
+      <label for="text" style="margin:0">Caption</label>
+    </div>
+    <textarea id="text" placeholder="What do you want to say?"></textarea>
+    <div class="count"><span id="count">0</span> characters</div>
+    <div class="row" style="margin-top:8px">
+      <button type="button" class="link-btn" id="saveCap">Save this caption</button>
+    </div>
+    <details style="margin:12px 0 0">
+      <summary>Saved captions</summary>
+      <div id="saved"></div>
+    </details>
+  </section>
+
+  <section>
+    <div class="label">Photos or videos <span class="hint">(public links, one per line)</span></div>
+    <textarea id="media" class="short" placeholder="https://example.com/photo.jpg"></textarea>
+    <label class="upload">Upload from this device
+      <input type="file" id="file" accept="image/*,video/*">
+    </label>
+    <div class="hint" id="uploadNote"></div>
+  </section>
+
+  <section>
+    <div class="label">Where to post</div>
+    <div class="chips" id="chips"></div>
+    <div class="row" style="margin-top:10px">
+      <button type="button" class="link-btn" id="all">Select all</button>
+      <button type="button" class="link-btn" id="none">Clear</button>
+    </div>
+    <div class="warn" id="warn"></div>
+  </section>
+
+  <section id="extras" hidden>
+    <div class="field" id="titleField">
+      <label for="title">Title <span class="hint">(YouTube and Pinterest)</span></label>
+      <input type="text" id="title" maxlength="100" placeholder="Video or pin title">
+    </div>
+    <div class="field" id="ytField">
+      <label for="ytVis">YouTube visibility</label>
+      <select id="ytVis">
+        <option value="public">Public</option>
+        <option value="unlisted">Unlisted</option>
+        <option value="private">Private</option>
+      </select>
+    </div>
+    <div class="field" id="pinField">
+      <label for="board">Pinterest board ID <span class="hint">(optional, uses your default board if empty)</span></label>
+      <input type="text" id="board" placeholder="e.g. 93383204522">
+    </div>
+  </section>
+
+  <section>
+    <label for="when">Schedule <span class="hint">(leave empty to post now)</span></label>
+    <input type="datetime-local" id="when">
+  </section>
+
+  <button class="send" id="send">Post now</button>
+  <div class="results" id="results" aria-live="polite"></div>
+</main>
+
+<script>
+// Add or remove platforms here. "id" must match the name Ayrshare expects.
+const PLATFORMS = [
+  { id: "instagram", label: "Instagram", needsMedia: true },
+  { id: "facebook",  label: "Facebook" },
+  { id: "twitter",   label: "X" },
+  { id: "tiktok",    label: "TikTok", needsMedia: true },
+  { id: "linkedin",  label: "LinkedIn" },
+  { id: "threads",   label: "Threads" },
+  { id: "bluesky",   label: "Bluesky" },
+  { id: "telegram",  label: "Telegram" },
+  { id: "gmb",       label: "Google Business" },
+  { id: "youtube",   label: "YouTube", needsMedia: true, needsTitle: true },
+  { id: "pinterest", label: "Pinterest", needsMedia: true, needsTitle: true }
+];
+
+const $ = (id) => document.getElementById(id);
+const store = {
+  get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+};
+
+let selected = new Set(store.get("poster.platforms", []));
+$("pw").value = store.get("poster.pw", "");
+if (!$("pw").value) $("lock").open = true;
+
+// Platform chips
+PLATFORMS.forEach((p) => {
+  const wrap = document.createElement("label");
+  wrap.className = "chip";
+  wrap.innerHTML = '<input type="checkbox"><span></span>';
+  const box = wrap.querySelector("input");
+  wrap.querySelector("span").textContent = p.label;
+  box.checked = selected.has(p.id);
+  box.addEventListener("change", () => {
+    box.checked ? selected.add(p.id) : selected.delete(p.id);
+    store.set("poster.platforms", [...selected]);
+    refresh();
+  });
+  wrap.dataset.id = p.id;
+  $("chips").appendChild(wrap);
+});
+
+function setAll(on) {
+  selected = new Set(on ? PLATFORMS.map((p) => p.id) : []);
+  store.set("poster.platforms", [...selected]);
+  document.querySelectorAll(".chip").forEach((c) => {
+    c.querySelector("input").checked = selected.has(c.dataset.id);
+  });
+  refresh();
+}
+$("all").onclick = () => setAll(true);
+$("none").onclick = () => setAll(false);
+
+function mediaList() {
+  return $("media").value.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+
+function refresh() {
+  $("count").textContent = $("text").value.length;
+  $("send").textContent = $("when").value ? "Schedule post" : "Post now";
+  const needs = PLATFORMS.filter((p) => p.needsMedia && selected.has(p.id));
+  $("extras").hidden = !(selected.has("youtube") || selected.has("pinterest"));
+  $("ytField").hidden = !selected.has("youtube");
+  $("pinField").hidden = !selected.has("pinterest");
+  $("warn").textContent = needs.length && !mediaList().length
+    ? needs.map((p) => p.label).join(" and ") + " need a photo or video."
+    : "";
+}
+["text", "media", "when"].forEach((id) => $(id).addEventListener("input", refresh));
+$("pw").addEventListener("input", () => store.set("poster.pw", $("pw").value));
+refresh();
+
+// Saved captions (kept in this browser only)
+function renderSaved() {
+  const list = store.get("poster.saved", []);
+  const box = $("saved");
+  box.innerHTML = "";
+  if (!list.length) {
+    const e = document.createElement("div");
+    e.className = "saved-empty";
+    e.textContent = "Nothing saved yet.";
+    box.appendChild(e);
+    return;
+  }
+  list.forEach((text, i) => {
+    const item = document.createElement("div");
+    item.className = "saved-item";
+    const t = document.createElement("div");
+    t.className = "txt";
+    t.textContent = text;
+    t.title = "Tap to use this caption";
+    t.onclick = () => { $("text").value = text; refresh(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    const d = document.createElement("button");
+    d.type = "button";
+    d.className = "link-btn del";
+    d.textContent = "Delete";
+    d.onclick = () => {
+      const next = store.get("poster.saved", []);
+      next.splice(i, 1);
+      store.set("poster.saved", next);
+      renderSaved();
+    };
+    item.append(t, d);
+    box.appendChild(item);
+  });
+}
+$("saveCap").onclick = () => {
+  const text = $("text").value.trim();
+  if (!text) return;
+  const list = store.get("poster.saved", []);
+  if (!list.includes(text)) list.unshift(text);
+  store.set("poster.saved", list.slice(0, 30));
+  renderSaved();
+  $("saveCap").textContent = "Saved";
+  setTimeout(() => { $("saveCap").textContent = "Save this caption"; }, 1500);
+};
+renderSaved();
+
+// Upload from device (needs an Ayrshare plan that includes media upload)
+$("file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) {
+    $("uploadNote").textContent = "That file is over 4 MB. Paste a public link instead.";
+    e.target.value = "";
+    return;
+  }
+  $("uploadNote").textContent = "Uploading…";
+  try {
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => rej(new Error("Could not read the file."));
+      r.readAsDataURL(file);
+    });
+    const r = await fetch("/.netlify/functions/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-app-password": $("pw").value },
+      body: JSON.stringify({ file: dataUrl, fileName: file.name })
+    });
+    const data = await r.json();
+    if (!r.ok || !data.url) throw new Error(data.error || data.message || "Upload failed.");
+    $("media").value = ($("media").value.trim() + "\n" + data.url).trim();
+    $("uploadNote").textContent = "Uploaded.";
+    refresh();
+  } catch (err) {
+    $("uploadNote").textContent = err.message;
+  }
+  e.target.value = "";
+});
+
+function show(items) {
+  const box = $("results");
+  box.innerHTML = "";
+  items.forEach(({ ok, title, detail, url }) => {
+    const d = document.createElement("div");
+    d.className = "res " + (ok ? "ok" : "bad");
+    const b = document.createElement("b");
+    b.textContent = title;
+    d.appendChild(b);
+    if (detail) {
+      const s = document.createElement("small");
+      s.textContent = detail;
+      d.appendChild(s);
+    }
+    if (url) {
+      const a = document.createElement("a");
+      a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "View post";
+      d.appendChild(a);
+    }
+    box.appendChild(d);
+  });
+}
+
+$("send").addEventListener("click", async () => {
+  const post = $("text").value.trim();
+  const media = mediaList();
+  if (!$("pw").value) { $("lock").open = true; show([{ ok: false, title: "Enter your app password first." }]); return; }
+  if (!selected.size) { show([{ ok: false, title: "Pick at least one platform." }]); return; }
+  if (!post && !media.length) { show([{ ok: false, title: "Add a caption or a photo." }]); return; }
+
+  const title = $("title").value.trim();
+  if ((selected.has("youtube") || selected.has("pinterest")) && !title) {
+    show([{ ok: false, title: "Add a title for YouTube or Pinterest." }]);
+    return;
+  }
+
+  const payload = { post, platforms: [...selected] };
+  if (selected.has("youtube")) {
+    payload.title = title;
+    payload.youTubeOptions = { title, visibility: $("ytVis").value };
+  }
+  if (selected.has("pinterest")) {
+    payload.pinterestOptions = { title };
+    if ($("board").value.trim()) payload.pinterestOptions.boardId = $("board").value.trim();
+  }
+  if (media.length) payload.mediaUrls = media;
+  if ($("when").value) payload.scheduleDate = new Date($("when").value).toISOString();
+
+  $("send").disabled = true;
+  $("send").textContent = "Sending…";
+  try {
+    const r = await fetch("/.netlify/functions/post", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-app-password": $("pw").value },
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    const out = [];
+    if (r.status === 401) {
+      out.push({ ok: false, title: "Wrong app password." });
+    } else {
+      (data.postIds || []).forEach((p) => out.push({
+        ok: p.status === "success",
+        title: p.platform || "Platform",
+        detail: p.status === "success" ? (payload.scheduleDate ? "Scheduled" : "Posted") : (p.message || p.status),
+        url: p.postUrl
+      }));
+      (data.errors || []).forEach((e) => out.push({
+        ok: false,
+        title: e.platform || "Error",
+        detail: e.message || JSON.stringify(e)
+      }));
+      if (!out.length) {
+        out.push({
+          ok: r.ok && data.status !== "error",
+          title: r.ok ? (payload.scheduleDate ? "Scheduled." : "Sent.") : "Something went wrong.",
+          detail: data.message || data.error || ""
+        });
+      }
+    }
+    show(out);
+    if (out.length && out.every((o) => o.ok)) { $("text").value = ""; $("media").value = ""; $("when").value = ""; $("title").value = ""; }
+  } catch (err) {
+    show([{ ok: false, title: "Could not reach the server.", detail: err.message }]);
+  }
+  $("send").disabled = false;
+  refresh();
+});
+</script>
+</body>
+</html>
